@@ -1,14 +1,25 @@
 package cs.hku.zwj.timetable_test;
 
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
 import com.islandparadise14.mintable.MinTimeTableView;
 import com.islandparadise14.mintable.ScheduleDay;
@@ -26,7 +37,7 @@ import java.util.Date;
 public class MainActivity extends AppCompatActivity {
     private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
-//    private SQLiteDatabase db;
+    private AlarmManager alarmManager;
     private DatabaseHelper dbHelper;
 
     @Override
@@ -36,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -44,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this, "mydb", null, 1);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        String[] args = {"COMP7801"};
         Cursor cursor = db.rawQuery("select * from sem2 where weekNum=8", null);
         if (cursor.moveToFirst()) {
             do {
@@ -99,19 +110,62 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+        // 加一个临时展示通知用的
+        final ScheduleEntity tmp_schedule = new ScheduleEntity(
+                99999,
+                "For Notification Demo",
+                "None",
+                ScheduleDay.SUNDAY,
+                "10:00",
+                "13:00",
+                "yellow",
+                "#000000"
+        );
+        tmp_schedule.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                        Intent intentMorning = new Intent(MainActivity.this, AlarmBroadcastReceiver.class);
+                        intentMorning.setAction("CLOCK_IN");
 
-//        ScheduleEntity schedule = new ScheduleEntity(
-//                32,
-//                "Database",
-//                "IT Building 301",
-//                ScheduleDay.TUESDAY,
-//                "8:20",
-//                "10:30",
-//                "#73fcae68",
-//                "#000000"
-//        );
-//        scheduleList.add(schedule);
+                        intentMorning.putExtra("CourseName", tmp_schedule.getScheduleName());
+                        intentMorning.putExtra("Time", "class begin at: " + tmp_schedule.getStartTime());
+                        PendingIntent piMorning = PendingIntent.getBroadcast(MainActivity.this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                        long time = System.currentTimeMillis();
+                        Date d = new Date(time);
+                        Calendar c = Calendar.getInstance();
+                        c.setTime(d);
+                        c.add(Calendar.SECOND, 5);
+
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
+                    }
+                }
+        );
+        scheduleList.add(tmp_schedule);
+
         table.updateSchedules(scheduleList);
+
+        // 测试推送通知
+//        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+//        Intent intentMorning = new Intent(this, AlarmBroadcastReceiver.class);
+//        intentMorning.setAction("CLOCK_IN");
+//        intentMorning.putExtra("CourseName", "course_name");
+//        intentMorning.putExtra("Time", "time");
+//        PendingIntent piMorning = PendingIntent.getBroadcast(this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
+//
+//        SimpleDateFormat df = new SimpleDateFormat( "yyyy-MM-dd HH:mm" );
+//        Date d = null;
+//        try {
+//            d = df.parse("2020-05-06 11:38");
+//        } catch (ParseException e) {
+//            e.printStackTrace();
+//        }
+//        Calendar c = Calendar.getInstance();
+//        c.setTime(d);
+//
+//        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
     }
 
 }
