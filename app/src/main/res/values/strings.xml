@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Timetable_test</string>
+    <string name="app_name">MScComp TimeTable</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Preference Titles -->
