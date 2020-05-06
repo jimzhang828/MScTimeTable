@@ -12,41 +12,85 @@
         >
 
         <RelativeLayout android:id="@+id/header_info"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
 
             <TextView
-                android:text="@string/semester"
-                android:layout_width="78dp"
-                android:layout_height="43dp" app:layout_constraintTop_toTopOf="parent"
-                android:layout_alignParentLeft="true"
-                app:layout_constraintStart_toStartOf="parent"
-                android:id="@+id/semester" android:gravity="center"/>
+                    android:text="@string/semester"
+                    android:layout_width="78dp"
+                    android:layout_height="43dp" app:layout_constraintTop_toTopOf="parent"
+                    android:layout_alignParentLeft="true"
+                    app:layout_constraintStart_toStartOf="parent"
+                    android:id="@+id/semester" android:gravity="center"/>
             <TextView
-                android:layout_width="142dp"
-                android:layout_height="36dp" app:layout_constraintTop_toTopOf="parent"
-                android:layout_centerHorizontal="true"
-                android:id="@+id/weekNum"
-                android:textSize="18sp" app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" android:layout_marginTop="4dp" android:gravity="center"/>
+                    android:layout_width="142dp"
+                    android:layout_height="36dp" app:layout_constraintTop_toTopOf="parent"
+                    android:layout_centerHorizontal="true"
+                    android:id="@+id/weekNum"
+                    android:textSize="18sp" app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" android:layout_marginTop="4dp" android:gravity="center"/>
             <Button
-                android:text="@string/add"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_alignParentRight="true"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:id="@+id/add"
-                app:layout_constraintTop_toTopOf="parent"/>
+                    android:text="@string/add"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentRight="true"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:id="@+id/add"
+                    app:layout_constraintTop_toTopOf="parent" android:background="#00FFFFFF"
+                    android:backgroundTint="#00FFFFFF"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/month"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginStart="0dp"
+                    android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp"
+                    android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="40dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day1" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="92dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day2" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="144dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day3" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="196dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day4" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="246dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day5" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="296dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day6" android:gravity="center"/>
+            <TextView
+                    android:layout_width="50dp"
+                    android:layout_height="wrap_content" android:layout_alignParentStart="true"
+                    android:layout_marginStart="346dp" android:layout_alignParentTop="true"
+                    android:layout_marginTop="40dp" android:id="@+id/day7" android:gravity="center"/>
 
         </RelativeLayout>
-
-        <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@+id/header_info"
-            android:layout_above="@+id/footer_control"
-            android:padding="10dp">
+        <ScrollView
+                android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_below="@+id/header_info"
+                    android:layout_above="@+id/footer_control"
+                    android:padding="10dp">
 
             <com.islandparadise14.mintable.MinTimeTableView
                 android:id="@+id/timetable"
@@ -62,30 +106,30 @@
             android:layout_alignParentBottom="true"
             >
             <Button
-                android:text="@string/prev"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentLeft="true"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:id="@+id/prev"
-                app:layout_constraintStart_toStartOf="parent"/>
+                    android:text="@string/prev"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:id="@+id/prev"
+                    app:layout_constraintStart_toStartOf="parent" android:background="#FFFFFF"/>
             <Button
-                android:text="@string/today"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerHorizontal="true"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:id="@+id/today"/>
+                    android:text="@string/today"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:id="@+id/today" android:background="#FFFFFF"/>
             <Button
-                android:text="@string/next"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:id="@+id/next"/>
+                    android:text="@string/next"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:id="@+id/next" android:background="#FFFFFF"/>
         </RelativeLayout>
 
     </RelativeLayout>

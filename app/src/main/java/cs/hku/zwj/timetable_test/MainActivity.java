@@ -40,7 +40,6 @@ public class MainActivity extends AppCompatActivity {
     private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
     private AlarmManager alarmManager;
-    private DatabaseHelper dbHelper;
     private Button add;
     private Button prev;
     private Button next;
@@ -59,28 +58,32 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        MinTimeTableView table = findViewById(R.id.timetable);
-        table.initTable(day);
+    public void setCalendarTitle(int week) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setFirstDayOfWeek(Calendar.MONDAY);
+        calendar.set(Calendar.WEEK_OF_YEAR, week + 3);
+        int firstDayOfWeek = calendar.getFirstDayOfWeek();
+        calendar.set(Calendar.DAY_OF_WEEK, firstDayOfWeek);
+        String[] months = {
+                "Jan", "Feb", "Mar", "Apr",
+                "May", "Jun", "Jul", "Aug",
+                "Sep", "Oct", "Nov", "Dec"};
+        String month = months[calendar.get(Calendar.MONTH)];
+        TextView monthView = findViewById(R.id.month);
+        monthView.setText(month);
+        TextView[] textViews = new TextView[7];
+        int[] days = {R.id.day1, R.id.day2, R.id.day3, R.id.day4, R.id.day5, R.id.day6, R.id.day7};
 
-        //    private SQLiteDatabase db;
-        dbHelper = new DatabaseHelper(this, "mydb", null, 1);
+        for (int i = 0; i < 7; i++) {
+            textViews[i] = findViewById(days[i]);
+            textViews[i].setText(String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)));
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+    }
+
+    public void searchDatabase(int week) {
+        DatabaseHelper dbHelper = new DatabaseHelper(this, "mydb", null, 1);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        // get the week number of today
-        Date todayDate = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(todayDate);
-        int thisWeek = cal.get(Calendar.WEEK_OF_YEAR) - 3;
-
-        // set the week number
-        Intent myIntent = getIntent();
-        int week = myIntent.getIntExtra("weekNum",thisWeek);
-        weekNum.setText("Week "+week);
-
         Cursor cursor = db.rawQuery("select * from sem2 where weekNum="+week, null);
         if (cursor.moveToFirst()) {
             do {
@@ -120,6 +123,32 @@ public class MainActivity extends AppCompatActivity {
                 scheduleList.add(schedule);
             } while (cursor.moveToNext());
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        MinTimeTableView table = findViewById(R.id.timetable);
+        table.initTable(day);
+
+        // get the week number of today
+        Date todayDate = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(todayDate);
+        int thisWeek = cal.get(Calendar.WEEK_OF_YEAR) - 3;
+
+        // set the week number
+        Intent myIntent = getIntent();
+        int week = myIntent.getIntExtra("weekNum",thisWeek);
+        weekNum.setText("Week "+week);
+
+        // set calendar title
+        setCalendarTitle(week);
+
+        // get data from database according to week number
+        searchDatabase(week);
+
         table.setOnScheduleClickListener(
                 new OnScheduleClickListener() {
                     @Override
