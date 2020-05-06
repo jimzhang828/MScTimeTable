@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">MScComp TimeTable</string>
+    <string name="next">Next</string>
+    <string name="today">Today</string>
+    <string name="add">+</string>
+    <string name="prev">Prev</string>
+    <string name="semester">Smester 2\n2019–2020</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Preference Titles -->

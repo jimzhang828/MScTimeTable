@@ -14,6 +14,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -39,11 +41,21 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
     private AlarmManager alarmManager;
     private DatabaseHelper dbHelper;
+    private Button add;
+    private Button prev;
+    private Button next;
+    private Button today;
+    private TextView weekNum;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        add = findViewById(R.id.add);
+        prev = findViewById(R.id.prev);
+        next = findViewById(R.id.next);
+        today = findViewById(R.id.today);
+        weekNum = findViewById(R.id.weekNum);
 
     }
 
@@ -54,9 +66,22 @@ public class MainActivity extends AppCompatActivity {
         MinTimeTableView table = findViewById(R.id.timetable);
         table.initTable(day);
 
+        //    private SQLiteDatabase db;
         dbHelper = new DatabaseHelper(this, "mydb", null, 1);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        Cursor cursor = db.rawQuery("select * from sem2 where weekNum=8", null);
+
+        // get the week number of today
+        Date todayDate = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(todayDate);
+        int thisWeek = cal.get(Calendar.WEEK_OF_YEAR) - 3;
+
+        // set the week number
+        Intent myIntent = getIntent();
+        int week = myIntent.getIntExtra("weekNum",thisWeek);
+        weekNum.setText("Week "+week);
+
+        Cursor cursor = db.rawQuery("select * from sem2 where weekNum="+week, null);
         if (cursor.moveToFirst()) {
             do {
 
@@ -146,6 +171,24 @@ public class MainActivity extends AppCompatActivity {
         scheduleList.add(tmp_schedule);
 
         table.updateSchedules(scheduleList);
+
+        next.setOnClickListener(v->{
+            Intent intent = new Intent(v.getContext(), MainActivity.class);
+            intent.putExtra("weekNum", week+1);
+            startActivity(intent);
+        });
+
+        prev.setOnClickListener(v->{
+            Intent intent = new Intent(v.getContext(), MainActivity.class);
+            intent.putExtra("weekNum", week-1);
+            startActivity(intent);
+        });
+
+        today.setOnClickListener(v->{
+            Intent intent = new Intent(v.getContext(), MainActivity.class);
+            intent.putExtra("weekNum", thisWeek);
+            startActivity(intent);
+        });
 
         // 测试推送通知
 //        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
