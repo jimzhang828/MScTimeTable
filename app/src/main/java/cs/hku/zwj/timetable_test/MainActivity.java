@@ -6,6 +6,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -13,9 +14,11 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -33,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -40,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
     private AlarmManager alarmManager;
+    private AlertDialog alertDialog3;
     private Button add;
     private Button prev;
     private Button next;
@@ -55,6 +60,33 @@ public class MainActivity extends AppCompatActivity {
         next = findViewById(R.id.next);
         today = findViewById(R.id.today);
         weekNum = findViewById(R.id.weekNum);
+
+        // TODO
+        String[] courseSelected = {
+//                "COMP7103B",
+//                "COMP7305B",
+//                "COMP7309",
+//                "COMP7404D",
+//                "COMP7405",
+//                "COMP7407",
+//                "COMP7408",
+//                "COMP7506A",
+//                "COMP7506B",
+//                "COMP7606A",
+//                "COMP7606B",
+//                "COMP7606C",
+//                "COMP7801",
+//                "COMP7901",
+//                "COMP7904"
+        };
+        MyApplication application = (MyApplication)this.getApplication();
+        if (application.getCourseList() == null) {
+            application.setCourseList(
+                    new ArrayList<>(
+                            Arrays.asList(courseSelected)
+                    )
+            );
+        }
 
     }
 
@@ -97,6 +129,11 @@ public class MainActivity extends AppCompatActivity {
                 String endTime = cursor.getString(cursor.getColumnIndex("endTime"));
                 String bgColor = cursor.getString(cursor.getColumnIndex("bgColor"));
                 String weekNum = cursor.getString(cursor.getColumnIndex("weekNum"));
+
+                // TODO
+                MyApplication application = (MyApplication)this.getApplication();
+                ArrayList<String> courseList = application.getCourseList();
+                if (!courseList.contains(courseId)) continue;
 
                 SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd" );
                 Date date = null;
@@ -205,18 +242,21 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(v.getContext(), MainActivity.class);
             intent.putExtra("weekNum", week+1);
             startActivity(intent);
+            overridePendingTransition(0, 0);
         });
 
         prev.setOnClickListener(v->{
             Intent intent = new Intent(v.getContext(), MainActivity.class);
             intent.putExtra("weekNum", week-1);
             startActivity(intent);
+            overridePendingTransition(0, 0);
         });
 
         today.setOnClickListener(v->{
             Intent intent = new Intent(v.getContext(), MainActivity.class);
             intent.putExtra("weekNum", thisWeek);
             startActivity(intent);
+            overridePendingTransition(0, 0);
         });
 
         // 测试推送通知
@@ -239,5 +279,84 @@ public class MainActivity extends AppCompatActivity {
 //
 //        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
     }
+
+    public void showMutilAlertDialog(View view){
+        final String[] items = {
+                "COMP7103B",
+                "COMP7305B",
+                "COMP7309",
+                "COMP7404D",
+                "COMP7405",
+                "COMP7407",
+                "COMP7408",
+                "COMP7506A",
+                "COMP7506B",
+                "COMP7606A",
+                "COMP7606B",
+                "COMP7606C",
+                "COMP7801",
+                "COMP7901",
+                "COMP7904"
+        };
+        boolean[] checked = {
+                false, false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false
+        };
+        MyApplication application = (MyApplication)this.getApplication();
+        ArrayList<String> courseList = application.getCourseList();
+        for (int i=0; i<items.length; ++i) {
+            if (courseList.contains(items[i])) checked[i] = true;
+        }
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        alertBuilder.setTitle("Choose Your Enrolled Course: ");
+        /**
+         *第一个参数:弹出框的消息集合，一般为字符串集合
+         * 第二个参数：默认被选中的，布尔类数组
+         * 第三个参数：勾选事件监听
+         */
+        alertBuilder.setMultiChoiceItems(items, checked, new DialogInterface.OnMultiChoiceClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i, boolean isChecked) {
+                if (isChecked){
+                    System.out.println("#### check: " + items[i]);
+                    checked[i] = true;
+//                    Toast.makeText(MainActivity.this, "选择" + items[i], Toast.LENGTH_SHORT).show();
+                }else {
+                    System.out.println("#### uncheck: " + items[i]);
+                    checked[i] = false;
+//                    Toast.makeText(MainActivity.this, "取消选择" + items[i], Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        alertBuilder.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                courseList.clear();
+                for (int j=0; j<checked.length; ++j) {
+                    if (checked[j]) courseList.add(items[j]);
+                }
+                application.setCourseList(courseList);
+                Intent myIntent = getIntent();
+//                int week = myIntent.getIntExtra("weekNum",thisWeek);
+                startActivity(myIntent);
+                overridePendingTransition(0, 0);
+                onWindowFocusChanged(false);
+                alertDialog3.dismiss();
+            }
+        });
+
+        alertBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                alertDialog3.dismiss();
+            }
+        });
+
+
+        alertDialog3 = alertBuilder.create();
+        alertDialog3.show();
+    }
+
 
 }
