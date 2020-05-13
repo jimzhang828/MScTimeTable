@@ -33,12 +33,14 @@ import com.islandparadise14.mintable.OnScheduleClickListener;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+
 
 public class MainActivity extends AppCompatActivity {
     private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -260,24 +262,24 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 测试推送通知
-//        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-//        Intent intentMorning = new Intent(this, AlarmBroadcastReceiver.class);
-//        intentMorning.setAction("CLOCK_IN");
-//        intentMorning.putExtra("CourseName", "course_name");
-//        intentMorning.putExtra("Time", "time");
-//        PendingIntent piMorning = PendingIntent.getBroadcast(this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
-//
-//        SimpleDateFormat df = new SimpleDateFormat( "yyyy-MM-dd HH:mm" );
-//        Date d = null;
-//        try {
-//            d = df.parse("2020-05-06 11:38");
-//        } catch (ParseException e) {
-//            e.printStackTrace();
-//        }
-//        Calendar c = Calendar.getInstance();
-//        c.setTime(d);
-//
-//        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
+/*         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        Intent intentMorning = new Intent(this, AlarmBroadcastReceiver.class);
+        intentMorning.setAction("CLOCK_IN");
+        intentMorning.putExtra("CourseName", "course_name");
+        intentMorning.putExtra("Time", "time");
+        PendingIntent piMorning = PendingIntent.getBroadcast(this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        SimpleDateFormat df = new SimpleDateFormat( "yyyy-MM-dd HH:mm" );
+        Date d = null;
+        try {
+            d = df.parse("2020-05-06 11:38");
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+
+        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);*/
     }
 
     public void showMutilAlertDialog(View view){
@@ -343,6 +345,7 @@ public class MainActivity extends AppCompatActivity {
                 overridePendingTransition(0, 0);
                 onWindowFocusChanged(false);
                 alertDialog3.dismiss();
+                checkCourselist();
             }
         });
 
@@ -356,7 +359,73 @@ public class MainActivity extends AppCompatActivity {
 
         alertDialog3 = alertBuilder.create();
         alertDialog3.show();
+
     }
 
+    public void checkCourselist() {
+        System.out.println("checkcourselist");
+        MyApplication application = (MyApplication) this.getApplication();
+        ArrayList<String> courseList = application.getCourseList();
+        for (int week=7; week<=16;week++) {
+            DatabaseHelper dbHelper = new DatabaseHelper(this, "mydb", null, 1);
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            Cursor cursor = db.rawQuery("select * from sem2 where weekNum=" + week, null);
+            Cursor cursor2 = db.rawQuery("select * from sem2 where weekNum=" + week, null);
+            if (cursor.moveToFirst()) {
+                do {
+                    String courseId = cursor.getString(cursor.getColumnIndex("courseId"));
+                    String scheduleDate = cursor.getString(cursor.getColumnIndex("scheduleDate"));
+                    String startTime = cursor.getString(cursor.getColumnIndex("startTime"));
+                    String endTime = cursor.getString(cursor.getColumnIndex("endTime"));
+
+                    if (!courseList.contains(courseId)) continue;
+
+                    if (cursor2.moveToFirst()) {
+                        do {
+                            String courseId2 = cursor.getString(cursor.getColumnIndex("courseId"));
+                            String scheduleDate2 = cursor.getString(cursor.getColumnIndex("scheduleDate"));
+                            String startTime2 = cursor.getString(cursor.getColumnIndex("startTime"));
+                            String endTime2 = cursor.getString(cursor.getColumnIndex("endTime"));
+
+                            if (!courseList.contains(courseId)) continue;
+
+                            DateFormat df = new SimpleDateFormat("HH:mm"); //创建时间转换对象：时 分 秒
+                            try {
+                                Date date11 = df.parse(startTime); //转换为 date 类型 Debug：Thu Jan 01 11:11:11 CST 1970
+                                Date date21 = df.parse(startTime2); // 		 Debug：Thu Jan 01 12:12:12 CST 1970
+                                Date date12 = df.parse(endTime);
+                                Date date22 = df.parse(endTime2);
+                                assert date11 != null;
+                                assert date22 != null;
+                                boolean flag = date11.getTime() >= date22.getTime();
+                                assert date21 != null;
+                                assert date12 != null;
+                                boolean flag2 = date21.getTime() >= date12.getTime();
+                                if ((!scheduleDate.equals(scheduleDate2)) || flag || flag2)
+                                {
+                                    //没有重合
+                                    //System.out.println("Class schedule time non-overlapping");
+                                    //Toast.makeText(MainActivity.this, "Classes schedule time non-overlapping:", Toast.LENGTH_LONG).show();
+
+                                }else if (!courseId.equals(courseId2))
+                                {
+                                    //两门课程时间重合
+                                    System.out.println("class schedule time overlap= " + courseId + courseId2);
+                                    Toast.makeText(MainActivity.this, "Classes schedule time overlapping:\n" + courseId + " & " +courseId2 +" at " + scheduleDate, Toast.LENGTH_LONG).show();
+                                }
+
+                            } catch (ParseException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+
+                        } while (cursor.moveToNext());
+                    }
+
+                } while (cursor.moveToNext());
+            }
+
+        }
+    }
 
 }
