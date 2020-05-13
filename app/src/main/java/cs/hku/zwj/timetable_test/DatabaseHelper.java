@@ -12,8 +12,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        //创建sql语句，新建表
-        db.execSQL("DROP TABLE IF EXISTS sem2;");
+        // 如果数据库已存在，不会执行onCreate
+        // 1. 创建sql语句，新建sem2表
+//        db.execSQL("DROP TABLE IF EXISTS sem2;");
         String sqlCommand1 = "CREATE TABLE sem2 (\n" +
                              "schedule_id  INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
                              "courseId     TEXT,\n" +
@@ -137,6 +138,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         for (String insertion : insertions) {
             db.execSQL(insertion);
         }
+
+        // 2. 新建用户选课表
+        String createCourseList = "create table courseList (course TEXT);";
+        db.execSQL(createCourseList);
     }
 
     @Override

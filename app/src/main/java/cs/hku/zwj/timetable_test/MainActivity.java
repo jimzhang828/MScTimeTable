@@ -37,16 +37,17 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 
 
 public class MainActivity extends AppCompatActivity {
+    private MyApplication application;
     private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
     private AlarmManager alarmManager;
     private AlertDialog alertDialog3;
+    private DatabaseHelper dbHelper;
     private Button add;
     private Button prev;
     private Button next;
@@ -62,33 +63,8 @@ public class MainActivity extends AppCompatActivity {
         next = findViewById(R.id.next);
         today = findViewById(R.id.today);
         weekNum = findViewById(R.id.weekNum);
-
-        // TODO
-        String[] courseSelected = {
-//                "COMP7103B",
-//                "COMP7305B",
-//                "COMP7309",
-//                "COMP7404D",
-//                "COMP7405",
-//                "COMP7407",
-//                "COMP7408",
-//                "COMP7506A",
-//                "COMP7506B",
-//                "COMP7606A",
-//                "COMP7606B",
-//                "COMP7606C",
-//                "COMP7801",
-//                "COMP7901",
-//                "COMP7904"
-        };
-        MyApplication application = (MyApplication)this.getApplication();
-        if (application.getCourseList() == null) {
-            application.setCourseList(
-                    new ArrayList<>(
-                            Arrays.asList(courseSelected)
-                    )
-            );
-        }
+        dbHelper = new DatabaseHelper(this, "mydb", null, 1);
+        application = (MyApplication)this.getApplication();
 
     }
 
@@ -116,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void searchDatabase(int week) {
-        DatabaseHelper dbHelper = new DatabaseHelper(this, "mydb", null, 1);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         Cursor cursor = db.rawQuery("select * from sem2 where weekNum="+week, null);
         if (cursor.moveToFirst()) {
@@ -132,10 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 String bgColor = cursor.getString(cursor.getColumnIndex("bgColor"));
                 String weekNum = cursor.getString(cursor.getColumnIndex("weekNum"));
 
-                // TODO
-                MyApplication application = (MyApplication)this.getApplication();
-                ArrayList<String> courseList = application.getCourseList();
-                if (!courseList.contains(courseId)) continue;
+                if (!application.getCourseList().contains(courseId)) continue;
 
                 SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd" );
                 Date date = null;
@@ -176,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
         Calendar cal = Calendar.getInstance();
         cal.setTime(todayDate);
         int thisWeek = cal.get(Calendar.WEEK_OF_YEAR) - 3;
+        System.out.println("##### " + thisWeek);
 
         // set the week number
         Intent myIntent = getIntent();
@@ -223,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
                         intentMorning.setAction("CLOCK_IN");
 
                         intentMorning.putExtra("CourseName", tmp_schedule.getScheduleName());
-                        intentMorning.putExtra("Time", "class begin at: " + tmp_schedule.getStartTime());
+                        intentMorning.putExtra("Time", "class begin at: " + tmp_schedule.getScheduleDay() + " " + tmp_schedule.getStartTime());
                         PendingIntent piMorning = PendingIntent.getBroadcast(MainActivity.this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
 
                         long time = System.currentTimeMillis();
@@ -261,25 +234,6 @@ public class MainActivity extends AppCompatActivity {
             overridePendingTransition(0, 0);
         });
 
-        // 测试推送通知
-/*         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        Intent intentMorning = new Intent(this, AlarmBroadcastReceiver.class);
-        intentMorning.setAction("CLOCK_IN");
-        intentMorning.putExtra("CourseName", "course_name");
-        intentMorning.putExtra("Time", "time");
-        PendingIntent piMorning = PendingIntent.getBroadcast(this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        SimpleDateFormat df = new SimpleDateFormat( "yyyy-MM-dd HH:mm" );
-        Date d = null;
-        try {
-            d = df.parse("2020-05-06 11:38");
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        Calendar c = Calendar.getInstance();
-        c.setTime(d);
-
-        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);*/
     }
 
     public void showMutilAlertDialog(View view){
@@ -304,7 +258,6 @@ public class MainActivity extends AppCompatActivity {
                 false, false, false, false, false, false, false, false,
                 false, false, false, false, false, false, false
         };
-        MyApplication application = (MyApplication)this.getApplication();
         ArrayList<String> courseList = application.getCourseList();
         for (int i=0; i<items.length; ++i) {
             if (courseList.contains(items[i])) checked[i] = true;
@@ -322,11 +275,9 @@ public class MainActivity extends AppCompatActivity {
                 if (isChecked){
                     System.out.println("#### check: " + items[i]);
                     checked[i] = true;
-//                    Toast.makeText(MainActivity.this, "选择" + items[i], Toast.LENGTH_SHORT).show();
                 }else {
                     System.out.println("#### uncheck: " + items[i]);
                     checked[i] = false;
-//                    Toast.makeText(MainActivity.this, "取消选择" + items[i], Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -339,11 +290,10 @@ public class MainActivity extends AppCompatActivity {
                     if (checked[j]) courseList.add(items[j]);
                 }
                 application.setCourseList(courseList);
+                setNotification();
                 Intent myIntent = getIntent();
-//                int week = myIntent.getIntExtra("weekNum",thisWeek);
                 startActivity(myIntent);
                 overridePendingTransition(0, 0);
-                onWindowFocusChanged(false);
                 alertDialog3.dismiss();
                 checkCourselist();
             }
@@ -425,6 +375,51 @@ public class MainActivity extends AppCompatActivity {
                 } while (cursor.moveToNext());
             }
 
+        }
+    }
+
+    public void setNotification() {
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        manager.cancelAll();
+        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.rawQuery("select * from sem2", null);
+        if (cursor.moveToFirst()) {
+            do {
+
+                String schedule_id = cursor.getString(cursor.getColumnIndex("schedule_id"));
+                String courseId = cursor.getString(cursor.getColumnIndex("courseId"));
+                String courseName = cursor.getString(cursor.getColumnIndex("courseName"));
+                String scheduleDate = cursor.getString(cursor.getColumnIndex("scheduleDate"));
+                String classroom = cursor.getString(cursor.getColumnIndex("classroom"));
+                String startTime = cursor.getString(cursor.getColumnIndex("startTime"));
+                String endTime = cursor.getString(cursor.getColumnIndex("endTime"));
+                String bgColor = cursor.getString(cursor.getColumnIndex("bgColor"));
+                String weekNum = cursor.getString(cursor.getColumnIndex("weekNum"));
+
+                if (!application.getCourseList().contains(courseId)) continue;
+
+                SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd HH:mm" );
+                Date date = null;
+                try {
+                    date = sdf.parse(scheduleDate + " " + startTime);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+                Calendar c = Calendar.getInstance();
+                c.setTime(date);
+
+                Intent intentMorning = new Intent(MainActivity.this, AlarmBroadcastReceiver.class);
+                intentMorning.setAction("CLOCK_IN");
+
+                intentMorning.putExtra("CourseName", courseName);
+                intentMorning.putExtra("Time", "class begin at: " + scheduleDate + " " + startTime);
+                PendingIntent piMorning = PendingIntent.getBroadcast(MainActivity.this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
+
+                alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
+
+            } while (cursor.moveToNext());
         }
     }
 
