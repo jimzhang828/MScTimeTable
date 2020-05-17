@@ -37,7 +37,6 @@
                     android:layout_alignParentRight="true"
                     app:layout_constraintEnd_toEndOf="parent"
                     android:id="@+id/add"
-                    android:onClick="showMutilAlertDialog"
                     app:layout_constraintTop_toTopOf="parent" android:background="#00FFFFFF"
                     android:backgroundTint="#00FFFFFF"/>
             <TextView

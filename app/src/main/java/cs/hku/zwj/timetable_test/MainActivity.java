@@ -1,37 +1,28 @@
 package cs.hku.zwj.timetable_test;
 
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.ContextThemeWrapper;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.NotificationCompat;
-
 import com.islandparadise14.mintable.MinTimeTableView;
 import com.islandparadise14.mintable.ScheduleDay;
 import com.islandparadise14.mintable.ScheduleEntity;
-import com.islandparadise14.mintable.OnScheduleClickListener;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -43,10 +34,9 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
     private MyApplication application;
-    private String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-    private ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
+    private final String[] day = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    private final ArrayList<ScheduleEntity> scheduleList = new ArrayList<>();
     private AlarmManager alarmManager;
-    private AlertDialog alertDialog3;
     private DatabaseHelper dbHelper;
     private Button add;
     private Button prev;
@@ -91,12 +81,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public int findWeekFromDate(String scheduleDate) {
+        SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd" );
+        Date date = null;
+        try {
+            date = sdf.parse(scheduleDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        Calendar c = Calendar.getInstance();
+        assert date != null;
+        c.setTime(date);
+        int wek = c.get(Calendar.DAY_OF_WEEK);
+        wek = (wek + 5) % 7;
+        return wek;
+    }
+
     public void searchDatabase(int week) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         Cursor cursor = db.rawQuery("select * from sem2 where weekNum="+week, null);
         if (cursor.moveToFirst()) {
             do {
-
                 String schedule_id = cursor.getString(cursor.getColumnIndex("schedule_id"));
                 String courseId = cursor.getString(cursor.getColumnIndex("courseId"));
                 String courseName = cursor.getString(cursor.getColumnIndex("courseName"));
@@ -109,17 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (!application.getCourseList().contains(courseId)) continue;
 
-                SimpleDateFormat sdf = new SimpleDateFormat( "yyyy-MM-dd" );
-                Date date = null;
-                try {
-                    date = sdf.parse(scheduleDate);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-                Calendar c = Calendar.getInstance();
-                c.setTime(date);
-                int wek = c.get(Calendar.DAY_OF_WEEK);
-                wek = (wek + 5) % 7;
+                int wek = findWeekFromDate(scheduleDate);
 
                 ScheduleEntity schedule = new ScheduleEntity(
                         Integer.parseInt(schedule_id),
@@ -140,8 +135,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+
         MinTimeTableView table = findViewById(R.id.timetable);
         table.initTable(day);
+
 
         // get the week number of today
         Date todayDate = new Date();
@@ -162,56 +159,49 @@ public class MainActivity extends AppCompatActivity {
         searchDatabase(week);
 
         table.setOnScheduleClickListener(
-                new OnScheduleClickListener() {
-                    @Override
-                    public void scheduleClicked(@NotNull ScheduleEntity scheduleEntity) {
-                        AlertDialog alertDialog1 = new AlertDialog.Builder(MainActivity.this)
-                                .setTitle(scheduleEntity.getScheduleName())//标题
-                                .setMessage("Classroom: " + scheduleEntity.getRoomInfo() +
-                                        "\nStart at: " + scheduleEntity.getStartTime() +
-                                        "\nEnd at: " + scheduleEntity.getEndTime())
-                                .setIcon(R.mipmap.ic_launcher)//图标
-                                .create();
-                        alertDialog1.show();
-                    }
-                }
+            scheduleEntity -> {
+                AlertDialog alertDialog1 = new AlertDialog.Builder(MainActivity.this)
+                        .setTitle(scheduleEntity.getScheduleName())//标题
+                        .setMessage("Classroom: " + scheduleEntity.getRoomInfo() +
+                                "\nStart at: " + scheduleEntity.getStartTime() +
+                                "\nEnd at: " + scheduleEntity.getEndTime())
+                        .setIcon(R.mipmap.ic_launcher)//图标
+                        .create();
+                alertDialog1.show();
+            }
         );
         // 加一个临时展示通知用的
         final ScheduleEntity tmp_schedule = new ScheduleEntity(
-                99999,
-                "For Notification Demo",
-                "None",
-                ScheduleDay.SUNDAY,
-                "10:00",
-                "13:00",
-                "yellow",
-                "#000000"
+            99999,
+            "For Notification Demo",
+            "None",
+            ScheduleDay.SUNDAY,
+            "10:00",
+            "13:00",
+            "yellow",
+            "#000000"
         );
+
         tmp_schedule.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                        Intent intentMorning = new Intent(MainActivity.this, AlarmBroadcastReceiver.class);
-                        intentMorning.setAction("CLOCK_IN");
+            v -> {
+                alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                Intent intentMorning = new Intent(MainActivity.this, AlarmBroadcastReceiver.class);
+                intentMorning.setAction("CLOCK_IN");
 
-                        intentMorning.putExtra("CourseName", tmp_schedule.getScheduleName());
-                        intentMorning.putExtra("Time", "class begin at: " + tmp_schedule.getScheduleDay() + " " + tmp_schedule.getStartTime());
-                        PendingIntent piMorning = PendingIntent.getBroadcast(MainActivity.this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
+                intentMorning.putExtra("CourseName", tmp_schedule.getScheduleName());
+                intentMorning.putExtra("Time", "class begin at: " + tmp_schedule.getScheduleDay() + " " + tmp_schedule.getStartTime());
+                PendingIntent piMorning = PendingIntent.getBroadcast(MainActivity.this, 0, intentMorning, PendingIntent.FLAG_UPDATE_CURRENT);
 
-                        long time = System.currentTimeMillis();
-                        Date d = new Date(time);
-                        Calendar c = Calendar.getInstance();
-                        c.setTime(d);
-                        c.add(Calendar.SECOND, 5);
+                long time = System.currentTimeMillis();
+                Date d = new Date(time);
+                Calendar c = Calendar.getInstance();
+                c.setTime(d);
+                c.add(Calendar.SECOND, 5);
 
-                        alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
-                    }
-                }
+                alarmManager.set(AlarmManager.RTC_WAKEUP, c.getTimeInMillis(), piMorning);
+            }
         );
         scheduleList.add(tmp_schedule);
-
-        table.updateSchedules(scheduleList);
 
         next.setOnClickListener(v->{
             Intent intent = new Intent(v.getContext(), MainActivity.class);
@@ -233,6 +223,75 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             overridePendingTransition(0, 0);
         });
+
+        add.setOnClickListener(v->{
+            AlertDialog choiceDialog = new AlertDialog.Builder(this).create();
+            choiceDialog.show();
+
+            Window window = choiceDialog.getWindow();
+            assert window != null;
+            window.setContentView(R.layout.addchoice);
+            Button custom = window.findViewById(R.id.custom);
+            Button msccs = window.findViewById(R.id.msccs);
+
+            custom.setOnClickListener(vvv->{
+
+//                AlertDialog customDialog = new AlertDialog.Builder(this).create();
+//                customDialog.show();
+//                Window customWindow = customDialog.getWindow();
+//                assert customWindow != null;
+//                customWindow.setContentView(R.layout.custom);
+//                customDialog.setTitle("Input Course Information: ");
+
+                LayoutInflater li = LayoutInflater.from(this);
+                View promptsView = li.inflate(R.layout.custom, null);
+                AlertDialog.Builder customAlert = new AlertDialog.Builder(this);
+                customAlert.setTitle("Input Course Information: ");
+                customAlert.setView(promptsView);
+
+                customAlert.setPositiveButton("OK", (dialog, which) -> {
+                    String courseId = ((EditText) promptsView.findViewById(R.id.courseId)).getText().toString();
+                    String courseName = ((EditText) promptsView.findViewById(R.id.courseName)).getText().toString();
+                    String courseDate = ((EditText) promptsView.findViewById(R.id.courseDate)).getText().toString();
+//                    String location = ((EditText) promptsView.findViewById(R.id.location)).getText().toString();
+//                    String startTime = ((EditText) promptsView.findViewById(R.id.startTime)).getText().toString();
+//                    String endTime = ((EditText) promptsView.findViewById(R.id.endTime)).getText().toString();
+                    String location = "111";
+                    String startTime = "10:00";
+                    String endTime = "12:00";
+
+                    ScheduleEntity custom_schedule = new ScheduleEntity(
+                            888,
+                            courseId + "\n" + courseName,
+                            location,
+                            findWeekFromDate(courseDate),
+                            startTime,
+                            endTime,
+                            "yellow",
+                            "#000000"
+                    );
+                    scheduleList.add(custom_schedule);
+
+                });
+
+                customAlert.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+                AlertDialog customDialog = customAlert.create();
+                customDialog.show();
+
+            });
+
+            msccs.setOnClickListener(this::showMutilAlertDialog);
+
+        });
+
+
+        // 点击课表空白处，获取相应的scheduleDay和time
+//        table.setOnTimeCellClickListener((scheduleDay, time)->{
+//            System.out.println("scheduleDay" + scheduleDay);
+//            System.out.println("time" + time);
+//        });
+
+        table.updateSchedules(scheduleList);
 
     }
 
@@ -264,50 +323,36 @@ public class MainActivity extends AppCompatActivity {
         }
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
         alertBuilder.setTitle("Choose Your Enrolled Course: ");
-        /**
-         *第一个参数:弹出框的消息集合，一般为字符串集合
-         * 第二个参数：默认被选中的，布尔类数组
-         * 第三个参数：勾选事件监听
+        /*
+         第一个参数:弹出框的消息集合，一般为字符串集合
+          第二个参数：默认被选中的，布尔类数组
+          第三个参数：勾选事件监听
          */
-        alertBuilder.setMultiChoiceItems(items, checked, new DialogInterface.OnMultiChoiceClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i, boolean isChecked) {
-                if (isChecked){
-                    System.out.println("#### check: " + items[i]);
-                    checked[i] = true;
-                }else {
-                    System.out.println("#### uncheck: " + items[i]);
-                    checked[i] = false;
-                }
+        alertBuilder.setMultiChoiceItems(items, checked, (dialogInterface, i, isChecked) -> {
+            if (isChecked){
+                System.out.println("#### check: " + items[i]);
+                checked[i] = true;
+            }else {
+                System.out.println("#### uncheck: " + items[i]);
+                checked[i] = false;
             }
         });
-        alertBuilder.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                courseList.clear();
-                for (int j=0; j<checked.length; ++j) {
-                    if (checked[j]) courseList.add(items[j]);
-                }
-                application.setCourseList(courseList);
-                setNotification();
-                Intent myIntent = getIntent();
-                startActivity(myIntent);
-                overridePendingTransition(0, 0);
-                alertDialog3.dismiss();
-                checkCourselist();
+        alertBuilder.setPositiveButton("Confirm", (dialogInterface, i) -> {
+            courseList.clear();
+            for (int j=0; j<checked.length; ++j) {
+                if (checked[j]) courseList.add(items[j]);
             }
+            application.setCourseList(courseList);
+            setNotification();
+            Intent myIntent = getIntent();
+            startActivity(myIntent);
+            overridePendingTransition(0, 0);
+            checkCourselist();
         });
 
-        alertBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                alertDialog3.dismiss();
-            }
-        });
+        alertBuilder.setNegativeButton("Cancel", (dialog, i) -> dialog.cancel());
 
-
-        alertDialog3 = alertBuilder.create();
+        AlertDialog alertDialog3 = alertBuilder.create();
         alertDialog3.show();
 
     }
@@ -332,12 +377,12 @@ public class MainActivity extends AppCompatActivity {
 
                     if (cursor2.moveToFirst()) {
                         do {
-                            String courseId2 = cursor.getString(cursor.getColumnIndex("courseId"));
-                            String scheduleDate2 = cursor.getString(cursor.getColumnIndex("scheduleDate"));
-                            String startTime2 = cursor.getString(cursor.getColumnIndex("startTime"));
-                            String endTime2 = cursor.getString(cursor.getColumnIndex("endTime"));
+                            String courseId2 = cursor2.getString(cursor.getColumnIndex("courseId"));
+                            String scheduleDate2 = cursor2.getString(cursor.getColumnIndex("scheduleDate"));
+                            String startTime2 = cursor2.getString(cursor.getColumnIndex("startTime"));
+                            String endTime2 = cursor2.getString(cursor.getColumnIndex("endTime"));
 
-                            if (!courseList.contains(courseId)) continue;
+                            if (!courseList.contains(courseId2)) continue;
 
                             DateFormat df = new SimpleDateFormat("HH:mm"); //创建时间转换对象：时 分 秒
                             try {
@@ -361,7 +406,10 @@ public class MainActivity extends AppCompatActivity {
                                 {
                                     //两门课程时间重合
                                     System.out.println("class schedule time overlap= " + courseId + courseId2);
-                                    Toast.makeText(MainActivity.this, "Classes schedule time overlapping:\n" + courseId + " & " +courseId2 +" at " + scheduleDate, Toast.LENGTH_LONG).show();
+                                    Toast.makeText(
+                                            MainActivity.this,
+                                            "Classes schedule time overlapping:\n" + courseId + " & " +courseId2 +" at " + scheduleDate,
+                                            Toast.LENGTH_LONG).show();
                                 }
 
                             } catch (ParseException e) {
@@ -369,7 +417,7 @@ public class MainActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
 
-                        } while (cursor.moveToNext());
+                        } while (cursor2.moveToNext());
                     }
 
                 } while (cursor.moveToNext());
@@ -408,6 +456,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 Calendar c = Calendar.getInstance();
+                assert date != null;
                 c.setTime(date);
 
                 Intent intentMorning = new Intent(MainActivity.this, AlarmBroadcastReceiver.class);

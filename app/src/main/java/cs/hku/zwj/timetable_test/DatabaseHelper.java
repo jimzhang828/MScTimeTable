@@ -142,6 +142,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 2. 新建用户选课表
         String createCourseList = "create table courseList (course TEXT);";
         db.execSQL(createCourseList);
+
     }
 
     @Override
